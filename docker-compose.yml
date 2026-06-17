@@ -1,0 +1,14 @@
+services:
+  aeo-validator:
+    build: .
+    container_name: aeo-validator
+    restart: unless-stopped
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - PORT=3006
+    networks:
+      - infra_default
+
+networks:
+  infra_default:
+    external: true
