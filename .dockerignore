@@ -1,5 +1,9 @@
 frontend/node_modules
-.env
+backend/.env
 backend/__pychache__
+backend/.venv
 .git
 *.md
+**/.vscode
+.gitignore
+README.md
