@@ -20,7 +20,7 @@ ENV PATH="/venv/bin:$PATH"
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
+    --mount=type=bind,source=backend/requirements.txt,target=requirements.txt \
     pip install -r requirements.txt
 
 # Use the minimal runtime image. It runs as nonroot by default.
