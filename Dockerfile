@@ -1,43 +1,36 @@
-# syntax=docker/dockerfile:1
+# === STAGE 1: Build the Vite Frontend ===
+FROM node:20-slim AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# This Dockerfile uses Docker Hardened Images (DHI) for enhanced security.
-# For more information, see https://docs.docker.com/dhi/
-
-# Use the dev image to build and install dependencies.
+# === STAGE 2: Build the Python Dependencies ===
 FROM python:3.12-slim AS builder
-
 WORKDIR /app
-
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
-
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=backend/requirements.txt,target=requirements.txt \
     pip install -r requirements.txt
 
-# Use the minimal runtime image. It runs as nonroot by default.
-FROM python:3.12
-
+# === STAGE 3: Final Production Runtime ===
+FROM python:3.12-slim
 WORKDIR /app
 
+# Copy the python virtual environment
 COPY --from=builder /venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Copy the source code into the container.
+# Copy backend files
 COPY backend/ ./backend/
-COPY frontend/ ./frontend/
 
-# Expose the port that the application listens on.
+# Copy the BUILT frontend static files from Stage 1 
+# (Make sure your python app mounts 'frontend/dist' to serve it!)
+COPY --from=frontend-builder /frontend/dist ./frontend/dist
+
 EXPOSE 3006
 WORKDIR /app/backend
 
-# Run the application.
-CMD ["/venv/bin/python3", "-m", "uvicorn", "app:app", "--host=0.0.0.0", "--port=8000"]
+CMD ["/venv/bin/python3", "-m", "uvicorn", "app:app", "--host=0.0.0.0", "--port=3006"]
